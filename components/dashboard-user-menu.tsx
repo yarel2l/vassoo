@@ -22,13 +22,10 @@ import {
     Store,
     Truck,
     LayoutDashboard,
-    Languages,
-    Check,
     ShoppingBag,
     Heart,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
-import { useLanguage } from '@/components/language-provider'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
@@ -38,13 +35,7 @@ interface DashboardUserMenuProps {
 
 export function DashboardUserMenu({ variant = 'store' }: DashboardUserMenuProps) {
     const { user, profile, tenants, isPlatformAdmin, signOut } = useAuth()
-    const { language, setLanguage } = useLanguage()
     const pathname = usePathname()
-
-    const languages = [
-        { code: "en", name: "English", flag: "🇺🇸" },
-        { code: "es", name: "Español", flag: "🇪🇸" },
-    ]
 
     // Get user initials
     const getInitials = () => {
@@ -180,29 +171,6 @@ export function DashboardUserMenu({ variant = 'store' }: DashboardUserMenuProps)
                         My Account
                     </Link>
                 </DropdownMenuItem>
-
-                {/* Language Selector */}
-                <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className={cn("text-white", colorScheme.item)}>
-                        <Languages className="mr-2 h-4 w-4" />
-                        <span>Language</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className={colorScheme.subMenu}>
-                        {languages.map((lang) => (
-                            <DropdownMenuItem
-                                key={lang.code}
-                                onClick={() => setLanguage(lang.code as "en" | "es")}
-                                className={cn("flex items-center justify-between text-white", colorScheme.item)}
-                            >
-                                <div className="flex items-center">
-                                    <span className="mr-2">{lang.flag}</span>
-                                    <span>{lang.name}</span>
-                                </div>
-                                {language === lang.code && <Check className="h-4 w-4" />}
-                            </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuSubContent>
-                </DropdownMenuSub>
 
                 <DropdownMenuSeparator className={colorScheme.separator} />
 

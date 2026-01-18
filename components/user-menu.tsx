@@ -8,9 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -18,8 +15,6 @@ import {
   Heart,
   ShoppingBag,
   LogOut,
-  Languages,
-  Check,
   Store,
   Shield,
   Truck,
@@ -27,7 +22,6 @@ import {
   LogIn,
   LayoutDashboard,
 } from "lucide-react"
-import { useLanguage } from "@/components/language-provider"
 import { useAuth } from "@/contexts/auth-context"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -36,18 +30,12 @@ import { cn } from "@/lib/utils"
 export default function UserMenu() {
   const [isMounted, setIsMounted] = useState(false)
   const pathname = usePathname()
-  const { language, setLanguage } = useLanguage()
   const { user, profile, tenants, isLoading, isPlatformAdmin, signOut } = useAuth()
 
   // Prevent hydration mismatch
   useEffect(() => {
     setIsMounted(true)
   }, [])
-
-  const languages = [
-    { code: "en", name: "English", flag: "🇺🇸" },
-    { code: "es", name: "Español", flag: "🇪🇸" },
-  ]
 
   // Check if user has specific roles
   const hasStoreTenant = tenants.some(t => t.tenant?.type === 'owner_store')
@@ -181,29 +169,6 @@ export default function UserMenu() {
             <span>My Account</span>
           </Link>
         </DropdownMenuItem>
-
-        {/* Language Selector */}
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Languages className="mr-2 h-4 w-4" />
-            <span>Language</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
-            {languages.map((lang) => (
-              <DropdownMenuItem
-                key={lang.code}
-                onClick={() => setLanguage(lang.code as "en" | "es")}
-                className="flex items-center justify-between"
-              >
-                <div className="flex items-center">
-                  <span className="mr-2">{lang.flag}</span>
-                  <span>{lang.name}</span>
-                </div>
-                {language === lang.code && <Check className="h-4 w-4" />}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
 
         <DropdownMenuSeparator />
 
