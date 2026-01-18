@@ -78,7 +78,7 @@ Plataforma de comercio electrónico multi-vendedor con gestión de entregas, con
 ## 📋 Requisitos
 
 - Node.js 18+ (recomendado: 20+)
-- pnpm (recomendado) o npm
+- npm
 - Cuenta de Supabase
 - Cuenta de Stripe
 - Cuenta de Google Cloud (Maps API)
@@ -92,7 +92,7 @@ Plataforma de comercio electrónico multi-vendedor con gestión de entregas, con
 ```bash
 git clone <repository-url>
 cd frontend
-pnpm install
+npm install
 ```
 
 ### 2. Variables de Entorno
@@ -107,14 +107,14 @@ Crea un archivo `.env.local` en el directorio raíz:
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-# Server-side only (NUNCA exponer al cliente)
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+# Server-side (con prefijo NEXT_PUBLIC_ para compatibilidad con AWS Amplify SSR)
+NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # ============================================
 # ENCRIPTACIÓN (Requerido)
 # Genera con: openssl rand -hex 32
 # ============================================
-SETTINGS_ENCRYPTION_KEY=your-64-character-hex-key
+NEXT_PUBLIC_SETTINGS_ENCRYPTION_KEY=your-64-character-hex-key
 
 # ============================================
 # GOOGLE MAPS (Requerido para mapas)
@@ -157,13 +157,13 @@ supabase link --project-ref your-project-ref
 supabase db push
 
 # (Opcional) Seed inicial
-pnpm db:seed
+npm run db:seed
 ```
 
 ### 4. Iniciar Servidor de Desarrollo
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
@@ -293,34 +293,61 @@ La mayoría de las API keys se configuran desde `/dashboard/admin/settings` y se
 
 ## 🚢 Despliegue a Producción
 
-### Vercel
+### AWS Amplify
+
+El proyecto está configurado para despliegue en AWS Amplify Gen 1.
 
 1. **Conectar Repositorio**
-   ```bash
-   vercel link
+   - Ir a [AWS Amplify Console](https://console.aws.amazon.com/amplify/)
+   - Seleccionar "Host web app"
+   - Conectar tu repositorio de GitHub
+   - Seleccionar la rama `master`
+
+2. **Configuración de Build**
+   
+   El archivo `amplify.yml` en la raíz del proyecto contiene la configuración:
+   ```yaml
+   version: 1
+   frontend:
+     phases:
+       preBuild:
+         commands:
+           - npm install
+       build:
+         commands:
+           - npm run build
+     artifacts:
+       baseDirectory: .next
+       files:
+         - '**/*'
+     cache:
+       paths:
+         - .next/cache/**/*
+         - node_modules/**/*
    ```
 
-2. **Variables de Entorno en Vercel**
+3. **Variables de Entorno en Amplify**
    
-   Ir a Vercel Dashboard → Settings → Environment Variables:
+   Ir a Amplify Console → App Settings → Environment Variables:
    
    | Variable | Descripción |
    |----------|-------------|
    | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave anónima de Supabase |
-   | `SUPABASE_SERVICE_ROLE_KEY` | Clave de servicio (server-side) |
-   | `SETTINGS_ENCRYPTION_KEY` | Clave de encriptación (64 chars hex) |
+   | `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` | Clave de servicio (con prefijo NEXT_PUBLIC_ para SSR) |
+   | `NEXT_PUBLIC_SETTINGS_ENCRYPTION_KEY` | Clave de encriptación (64 chars hex) |
    | `NEXT_PUBLIC_GOOGLE_MAP_ID` | ID del mapa de Google |
    | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | (Opcional) Measurement ID de Google Analytics |
-   | `NEXT_PUBLIC_APP_URL` | URL de producción |
-   | `NEXT_PUBLIC_APP_NAME` | Nombre de la app |
+   | `NEXT_PUBLIC_APP_URL` | URL de producción (ej: https://vassoo.com) |
+   | `NEXT_PUBLIC_APP_NAME` | Nombre de la app (Vassoo) |
+
+   > **⚠️ Nota sobre AWS Amplify SSR**: Las variables del servidor en Amplify requieren el prefijo `NEXT_PUBLIC_` para estar disponibles en las funciones Lambda de SSR. Por eso usamos `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` en lugar de `SUPABASE_SERVICE_ROLE_KEY`.
 
    > **Nota**: Las keys de Stripe, Google Maps API y Resend se configuran desde el Panel de Administración después del primer despliegue.
 
-3. **Desplegar**
-   ```bash
-   vercel --prod
-   ```
+4. **Desplegar**
+   - Amplify despliega automáticamente al hacer push a la rama `master`
+   - Para forzar un nuevo build: Amplify Console → Build → "Redeploy this version"
 
 ### Post-Despliegue
 
@@ -350,16 +377,16 @@ La app de conductores es una Progressive Web App instalable en dispositivos móv
 ## 🧪 Scripts Disponibles
 
 ```bash
-pnpm dev          # Iniciar servidor de desarrollo
-pnpm build        # Build para producción
-pnpm start        # Iniciar servidor de producción
-pnpm lint         # Ejecutar ESLint
-pnpm db:seed      # Seed de datos de prueba
+npm run dev          # Iniciar servidor de desarrollo
+npm run build        # Build para producción
+npm run start        # Iniciar servidor de producción
+npm run lint         # Ejecutar ESLint
+npm run db:seed      # Seed de datos de prueba
 ```
 
 ## 🔒 Consideraciones de Seguridad
 
-- **Nunca exponer** `SUPABASE_SERVICE_ROLE_KEY` al cliente
+- **Nota sobre `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`**: Aunque tiene el prefijo `NEXT_PUBLIC_`, esta variable solo se usa en el servidor (API routes, server components). El prefijo es requerido por AWS Amplify para SSR.
 - Usar políticas **Row Level Security (RLS)** en Supabase
 - **Restringir API keys** a dominios específicos
 - Implementar **rate limiting** en endpoints sensibles
