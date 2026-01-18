@@ -29,35 +29,26 @@ import Link from "next/link"
 import { toast } from "@/hooks/use-toast"
 
 export default function PurchasesPage() {
-  const { orders } = useOrders()
-  const [isLoading, setIsLoading] = useState(true)
+  const { orders, isLoading } = useOrders()
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [])
 
   // Safely filter orders with null checks
   const safeOrders = orders || []
   const pendingOrders =
     safeOrders.filter(
       (order) =>
-        order && ["pending", "confirmed", "preparing", "ready", "picked_up", "on_the_way"].includes(order.status),
+        order && ["pending", "confirmed", "processing", "ready_for_pickup", "out_for_delivery"].includes(order.status),
     ) || []
-  const completedOrders = safeOrders.filter((order) => order && ["delivered", "cancelled"].includes(order.status)) || []
+  const completedOrders = safeOrders.filter((order) => order && ["delivered", "completed", "cancelled", "refunded"].includes(order.status)) || []
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
       case "confirmed":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-      case "preparing":
+      case "processing":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-      case "ready":
+      case "ready_for_pickup":
       case "picked_up":
       case "on_the_way":
         return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
@@ -108,7 +99,7 @@ export default function PurchasesPage() {
 
   const generateInvoiceText = (order: any) => {
     return `
-LIQUORHUB INVOICE
+VASSOO INVOICE
 ================
 
 Order Number: #${order.orderNumber}
@@ -128,14 +119,14 @@ ${order.shippingAddress.deliveryNotes ? `Delivery Notes: ${order.shippingAddress
 ITEMS ORDERED
 -------------
 ${order.items
-  .map(
-    (item: any) =>
-      `${item.productName} (${item.storeName})
+        .map(
+          (item: any) =>
+            `${item.productName} (${item.storeName})
   Quantity: ${item.quantity}
   Price: $${item.price.toFixed(2)} each
   Total: $${((item.price + item.taxes + item.shippingCost) * item.quantity).toFixed(2)}`,
-  )
-  .join("\n\n")}
+        )
+        .join("\n\n")}
 
 ORDER SUMMARY
 -------------
@@ -268,34 +259,34 @@ Thank you for your order!
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal:</span>
-                    <span>${order.subtotal.toFixed(2)}</span>
+                    <span>${(order.subtotal || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Taxes:</span>
-                    <span>${order.taxes.toFixed(2)}</span>
+                    <span>${(order.taxAmount || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Delivery:</span>
-                    <span>${order.shipping.toFixed(2)}</span>
+                    <span>${(order.deliveryFee || 0).toFixed(2)}</span>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
                     <span className="text-xs text-muted-foreground">
-                      Delivered: {order.createdAt.toLocaleDateString()}
+                      Delivered: {order.createdAt?.toLocaleDateString() || 'N/A'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CreditCard className="h-3 w-3" />
                     <span className="text-xs text-muted-foreground">
-                      {order.paymentMethod.type} •••• {order.paymentMethod.last4}
+                      {order.paymentMethod || 'Card'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-3 w-3" />
                     <span className="text-xs text-muted-foreground">
-                      {order.shippingAddress.city}, {order.shippingAddress.state}
+                      {order.deliveryAddress?.city || 'N/A'}, {order.deliveryAddress?.state || 'N/A'}
                     </span>
                   </div>
                 </div>
