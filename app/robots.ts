@@ -14,6 +14,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/admin/", "/private/", "/cart", "/account", "/checkout"],
       },
     ],
-    sitemap: "https://liquorhub.com/sitemap.xml",
+    sitemap: "https://vassoo.com/sitemap.xml",
   }
 }
