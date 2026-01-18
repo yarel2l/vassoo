@@ -44,12 +44,14 @@ export const metadata: Metadata = {
     title: "Vassoo - Premium Spirits & Wine Marketplace",
     description: "Discover premium spirits, wines, and liquors from multiple stores with the best prices and deals.",
     siteName: "Vassoo",
+    // Note: opengraph-image.tsx automatically generates the OG image
   },
   twitter: {
     card: "summary_large_image",
     title: "Vassoo - Premium Spirits & Wine Marketplace",
     description: "Discover premium spirits, wines, and liquors from multiple stores with the best prices and deals.",
     creator: "@vassoo",
+    // Note: twitter-image.tsx automatically generates the Twitter image
   },
   robots: {
     index: true,

@@ -1,0 +1,46 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#111827;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1f2937;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <!-- Decorative pattern -->
+  <g opacity="0.05">
+    <circle cx="100" cy="100" r="200" fill="white"/>
+    <circle cx="1100" cy="530" r="250" fill="white"/>
+  </g>
+  
+  <!-- Logo container -->
+  <g transform="translate(500, 140)">
+    <!-- Logo background rounded square -->
+    <rect width="200" height="200" rx="30" fill="url(#brandGradient)"/>
+    <!-- Whisky glass icon -->
+    <g transform="translate(50, 25)">
+      <path d="M12.5 12.5 L87.5 12.5 L78 137.5 L22 137.5 Z" stroke="white" stroke-width="8" fill="transparent"/>
+      <rect x="15" y="87.5" width="63" height="37.5" fill="white" opacity="0.6"/>
+      <line x1="22" y1="137.5" x2="78" y2="137.5" stroke="white" stroke-width="10"/>
+    </g>
+  </g>
+  
+  <!-- Brand name -->
+  <text x="600" y="420" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">
+    Vassoo
+  </text>
+  
+  <!-- Tagline -->
+  <text x="600" y="490" font-family="Inter, Arial, sans-serif" font-size="28" fill="#9ca3af" text-anchor="middle">
+    Premium Spirits &amp; Wine Marketplace
+  </text>
+  
+  <!-- Bottom accent line -->
+  <rect x="400" y="530" width="400" height="4" rx="2" fill="url(#brandGradient)"/>
+</svg>
