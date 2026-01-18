@@ -8,6 +8,21 @@ import { platformSettingsService } from '@/lib/services/platform-settings-servic
  */
 export async function GET() {
     try {
+        // Check if Supabase environment variables are configured
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            console.warn('[Google API Settings] Missing Supabase environment variables')
+            return NextResponse.json({
+                enabled: false,
+                apiKey: null,
+                services: {
+                    places: false,
+                    maps: false,
+                    geocoding: false
+                },
+                warning: 'Server configuration incomplete'
+            })
+        }
+
         const config = await platformSettingsService.getGoogleApiConfig()
         const apiKey = await platformSettingsService.getGoogleApiKey()
 
@@ -30,9 +45,16 @@ export async function GET() {
         })
     } catch (error) {
         console.error('Error fetching Google API config:', error)
-        return NextResponse.json(
-            { error: 'Failed to fetch Google API configuration' },
-            { status: 500 }
-        )
+        // Return a non-error response to avoid breaking the client
+        return NextResponse.json({
+            enabled: false,
+            apiKey: null,
+            services: {
+                places: false,
+                maps: false,
+                geocoding: false
+            },
+            error: 'Configuration unavailable'
+        })
     }
 }
