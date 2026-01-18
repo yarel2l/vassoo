@@ -69,6 +69,12 @@ Plataforma de comercio electrónico multi-vendedor con gestión de entregas, con
 - Configuración de pagos (Stripe)
 - CMS para páginas dinámicas
 
+### Analytics
+- Google Analytics 4 integrado
+- Tracking de pageviews en SPA
+- Eventos de e-commerce (view_item, add_to_cart, purchase)
+- Eventos personalizados
+
 ## 📋 Requisitos
 
 - Node.js 18+ (recomendado: 20+)
@@ -76,6 +82,7 @@ Plataforma de comercio electrónico multi-vendedor con gestión de entregas, con
 - Cuenta de Supabase
 - Cuenta de Stripe
 - Cuenta de Google Cloud (Maps API)
+- Cuenta de Google Analytics (opcional)
 - Cuenta de Resend (opcional, para emails)
 
 ## 🛠️ Configuración de Desarrollo
@@ -114,6 +121,12 @@ SETTINGS_ENCRYPTION_KEY=your-64-character-hex-key
 # Obtener Map ID de: Google Cloud Console > Google Maps Platform > Map Management
 # ============================================
 NEXT_PUBLIC_GOOGLE_MAP_ID=your-map-id
+
+# ============================================
+# GOOGLE ANALYTICS (Opcional)
+# Obtener de: Google Analytics > Admin > Data Streams > Measurement ID
+# ============================================
+# NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 
 # ============================================
 # APLICACIÓN
@@ -252,6 +265,32 @@ La mayoría de las API keys se configuran desde `/dashboard/admin/settings` y se
 3. **Obtener API Key**: Dashboard → API Keys
 4. **Añadir en Panel Admin**: Settings → Email
 
+### Google Analytics (Opcional)
+
+1. **Crear cuenta en [analytics.google.com](https://analytics.google.com)**
+
+2. **Crear propiedad GA4**:
+   - Admin → Create Property
+   - Seleccionar "Web" como plataforma
+
+3. **Obtener Measurement ID**:
+   - Admin → Data Streams → Web
+   - Copiar el Measurement ID (formato: `G-XXXXXXXXXX`)
+
+4. **Añadir a variables de entorno**:
+   ```bash
+   NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+   ```
+
+5. **Eventos de e-commerce disponibles**:
+   - `view_item` - Ver producto
+   - `add_to_cart` - Añadir al carrito
+   - `remove_from_cart` - Quitar del carrito
+   - `begin_checkout` - Iniciar checkout
+   - `purchase` - Compra completada
+   - `search` - Búsqueda
+   - `login` / `sign_up` - Autenticación
+
 ## 🚢 Despliegue a Producción
 
 ### Vercel
@@ -272,6 +311,7 @@ La mayoría de las API keys se configuran desde `/dashboard/admin/settings` y se
    | `SUPABASE_SERVICE_ROLE_KEY` | Clave de servicio (server-side) |
    | `SETTINGS_ENCRYPTION_KEY` | Clave de encriptación (64 chars hex) |
    | `NEXT_PUBLIC_GOOGLE_MAP_ID` | ID del mapa de Google |
+   | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | (Opcional) Measurement ID de Google Analytics |
    | `NEXT_PUBLIC_APP_URL` | URL de producción |
    | `NEXT_PUBLIC_APP_NAME` | Nombre de la app |
 

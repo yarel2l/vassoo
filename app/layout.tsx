@@ -11,6 +11,7 @@ import { FavoritesProvider } from "@/contexts/favorites-context"
 import { OrdersProvider } from "@/contexts/orders-context"
 import { Toaster } from "@/components/ui/toaster"
 import OnboardingWrapper from "@/components/onboarding-wrapper"
+import { GoogleAnalytics } from "@/components/google-analytics"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -61,7 +62,12 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  generator: 'v0.app'
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/apple-icon.png',
+  },
 }
 
 export default function RootLayout({
@@ -72,6 +78,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" style={{ colorScheme: 'dark' }} suppressHydrationWarning>
       <body className={`${inter.className} bg-gray-900 text-white`}>
+        <GoogleAnalytics />
         <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>
             <LocationProvider>
