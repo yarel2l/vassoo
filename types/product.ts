@@ -25,6 +25,10 @@ export interface ProductOffer {
   }
   features: string[]
   conditions?: string[]
+  // Location information for fulfillment
+  locationId: string | null
+  locationName: string | null
+  inventoryId: string | null
 }
 
 export interface ProductReview {

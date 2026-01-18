@@ -55,6 +55,10 @@ export default function ProductInfo({ product, selectedOffer }: ProductInfoProps
       quantity,
       maxStock: selectedOfferData.stock,
       estimatedDelivery: selectedOfferData.estimatedDelivery,
+      // Location info for fulfillment
+      locationId: selectedOfferData.locationId || null,
+      locationName: selectedOfferData.locationName || null,
+      inventoryId: selectedOfferData.inventoryId || null,
     })
 
     // Reset quantity after adding to cart
