@@ -11,6 +11,10 @@ export interface CartItem {
   productImage: string
   storeId: string
   storeName: string
+  // Location information for multi-location stores
+  locationId: string | null
+  locationName: string | null
+  inventoryId: string | null
   price: number
   taxes: number
   shippingCost: number
@@ -31,7 +35,7 @@ interface CartContextType {
   removeFromCart: (itemId: string) => void
   updateQuantity: (itemId: string, quantity: number) => void
   clearCart: () => void
-  getItemQuantity: (productId: string, storeId: string) => number
+  getItemQuantity: (productId: string, storeId: string, locationId?: string | null) => number
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -60,8 +64,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const totalPrice = items.reduce((sum, item) => sum + (item.price + item.taxes + item.shippingCost) * item.quantity, 0)
 
   const addToCart = (newItem: Omit<CartItem, "id">) => {
+    // Find existing item considering locationId for multi-location stores
     const existingItemIndex = items.findIndex(
-      (item) => item.productId === newItem.productId && item.storeId === newItem.storeId,
+      (item) => 
+        item.productId === newItem.productId && 
+        item.storeId === newItem.storeId &&
+        item.locationId === newItem.locationId,
     )
 
     if (existingItemIndex >= 0) {
@@ -99,7 +107,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       const cartItem: CartItem = {
         ...newItem,
-        id: `${newItem.productId}-${newItem.storeId}-${Date.now()}`,
+        id: `${newItem.productId}-${newItem.storeId}-${newItem.locationId || 'default'}-${Date.now()}`,
       }
 
       setItems((prev) => [...prev, cartItem])
@@ -151,8 +159,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     })
   }
 
-  const getItemQuantity = (productId: string, storeId: string) => {
-    const item = items.find((item) => item.productId === productId && item.storeId === storeId)
+  const getItemQuantity = (productId: string, storeId: string, locationId?: string | null) => {
+    const item = items.find((item) => 
+      item.productId === productId && 
+      item.storeId === storeId &&
+      (locationId === undefined || item.locationId === locationId)
+    )
     return item ? item.quantity : 0
   }
 

@@ -4,18 +4,35 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Navbar from "@/components/navbar"
 import MobileBottomNav from "@/components/mobile-bottom-nav"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Package, Truck, Home } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { CheckCircle, Package, Truck, Home, UserPlus, History, MapPin, Zap, Loader2, Eye, EyeOff } from "lucide-react"
 import { useOrders } from "@/contexts/orders-context"
+import { useAuth } from "@/contexts/auth-context"
 import type { Order } from "@/contexts/orders-context"
 import Link from "next/link"
+import { toast } from "@/hooks/use-toast"
 
 export default function OrderConfirmationPage() {
   const params = useParams()
   const router = useRouter()
   const { getOrder } = useOrders()
+  const { user, signUp, signIn } = useAuth()
   const [order, setOrder] = useState<Order | null>(null)
+  
+  // Registration state
+  const [showRegister, setShowRegister] = useState(false)
+  const [registerForm, setRegisterForm] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    fullName: ""
+  })
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [registrationComplete, setRegistrationComplete] = useState(false)
 
   useEffect(() => {
     const orderId = params.id as string
@@ -23,10 +40,90 @@ export default function OrderConfirmationPage() {
 
     if (foundOrder) {
       setOrder(foundOrder)
+      // Pre-fill email from order for guest users
+      if (!user && foundOrder.shippingAddress?.email) {
+        setRegisterForm(prev => ({
+          ...prev,
+          email: foundOrder.shippingAddress.email || "",
+          fullName: foundOrder.shippingAddress.name || ""
+        }))
+      }
     } else {
       router.push("/purchases")
     }
-  }, [params.id, getOrder, router])
+  }, [params.id, getOrder, router, user])
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (registerForm.password !== registerForm.confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (registerForm.password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsRegistering(true)
+
+    try {
+      const { error } = await signUp(
+        registerForm.email,
+        registerForm.password,
+        registerForm.fullName
+      )
+
+      if (error) {
+        toast({
+          title: "Registration failed",
+          description: error.message,
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Try to link the guest order to the new user
+      if (order?.id) {
+        try {
+          await fetch("/api/orders/link-guest", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: registerForm.email,
+              orderId: order.id
+            })
+          })
+        } catch (err) {
+          console.error("Error linking order:", err)
+        }
+      }
+
+      setRegistrationComplete(true)
+      toast({
+        title: "Account created!",
+        description: "Please check your email to verify your account",
+      })
+
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsRegistering(false)
+    }
+  }
 
   if (!order) {
     return (
@@ -190,6 +287,173 @@ export default function OrderConfirmationPage() {
               </Button>
             </Link>
           </div>
+
+          {/* Guest Registration Prompt */}
+          {!user && !registrationComplete && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="h-5 w-5 text-primary" />
+                  Create an Account
+                </CardTitle>
+                <CardDescription>
+                  Save your order history and enjoy faster checkouts!
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!showRegister ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                      <div className="flex items-start gap-2">
+                        <History className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Order History</p>
+                          <p className="text-muted-foreground">Track all your orders</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Saved Addresses</p>
+                          <p className="text-muted-foreground">Quick address selection</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Zap className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Faster Checkout</p>
+                          <p className="text-muted-foreground">Auto-filled details</p>
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => setShowRegister(true)} 
+                      className="w-full"
+                      size="lg"
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Create Account
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground">
+                      Already have an account?{" "}
+                      <Link href="/auth/login" className="text-primary hover:underline">
+                        Sign in
+                      </Link>
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleRegister} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName">Full Name</Label>
+                        <Input
+                          id="fullName"
+                          value={registerForm.fullName}
+                          onChange={(e) => setRegisterForm(prev => ({ ...prev, fullName: e.target.value }))}
+                          placeholder="John Doe"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={registerForm.email}
+                          onChange={(e) => setRegisterForm(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="john@example.com"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            value={registerForm.password}
+                            onChange={(e) => setRegisterForm(prev => ({ ...prev, password: e.target.value }))}
+                            placeholder="••••••••"
+                            required
+                            minLength={6}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <Input
+                          id="confirmPassword"
+                          type={showPassword ? "text" : "password"}
+                          value={registerForm.confirmPassword}
+                          onChange={(e) => setRegisterForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                          placeholder="••••••••"
+                          required
+                          minLength={6}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setShowRegister(false)}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" className="flex-1" disabled={isRegistering}>
+                        {isRegistering ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          "Create Account"
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Registration Complete */}
+          {registrationComplete && (
+            <Card className="border-green-500/20 bg-green-500/5">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Account Created!</p>
+                    <p className="text-sm text-muted-foreground">
+                      Check your email to verify your account, then you can sign in to view your order history.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Link href="/auth/login">
+                    <Button variant="outline" className="w-full">
+                      Sign In
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
       <MobileBottomNav />

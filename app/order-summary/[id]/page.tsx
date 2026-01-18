@@ -13,21 +13,26 @@ import { CheckCircle, Clock, Truck, MapPin, Phone, Download, Package, Share2, Ho
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "@/hooks/use-toast"
+import type { Order } from "@/contexts/orders-context"
 
 export default function OrderSummaryPage() {
   const params = useParams()
   const router = useRouter()
-  const { getOrder } = useOrders()
-  const [order, setOrder] = useState(null)
+  const { getOrder, getOrderById } = useOrders()
+  const [order, setOrder] = useState<Order | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (params.id) {
-      const foundOrder = getOrder(params.id as string)
-      setOrder(foundOrder)
-      setIsLoading(false)
+    const fetchOrder = async () => {
+      if (params.id) {
+        setIsLoading(true)
+        const foundOrder = await getOrderById(params.id as string)
+        setOrder(foundOrder)
+        setIsLoading(false)
+      }
     }
-  }, [params.id, getOrder])
+    fetchOrder()
+  }, [params.id, getOrderById])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -88,13 +93,17 @@ export default function OrderSummaryPage() {
 
     const shareData = {
       title: `Order #${order.orderNumber}`,
-      text: `I just placed an order for $${order.total.toFixed(2)} on LiquorHub!`,
+      text: `I just placed an order for $${order.total.toFixed(2)} on Vassoo!`,
       url: window.location.href,
     }
 
     try {
       if (navigator.share) {
         await navigator.share(shareData)
+        toast({
+          title: "Shared successfully",
+          description: "Order details have been shared",
+        })
       } else {
         await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`)
         toast({
@@ -102,14 +111,31 @@ export default function OrderSummaryPage() {
           description: "Order link copied to clipboard",
         })
       }
-    } catch (error) {
-      console.error("Error sharing:", error)
+    } catch (error: any) {
+      // User cancelled the share dialog - this is not an error
+      if (error?.name === 'AbortError') {
+        return
+      }
+      // For other errors, fall back to clipboard
+      try {
+        await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`)
+        toast({
+          title: "Link copied",
+          description: "Order link copied to clipboard",
+        })
+      } catch {
+        toast({
+          title: "Unable to share",
+          description: "Please copy the URL manually from the address bar",
+          variant: "destructive",
+        })
+      }
     }
   }
 
   const generateInvoiceText = (order: any) => {
     return `
-LIQUORHUB INVOICE
+VASSOO INVOICE
 ================
 
 Order Number: #${order.orderNumber}
@@ -118,45 +144,47 @@ Status: ${order.status.toUpperCase()}
 
 DELIVERY INFORMATION
 -------------------
-${order.shippingAddress.name}
-${order.shippingAddress.street}
-${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.zipCode}
-Phone: ${order.shippingAddress.phone}
-Email: ${order.shippingAddress.email}
+DELIVERY INFORMATION
+-------------------
+${order.deliveryAddress?.name}
+${order.deliveryAddress?.street}
+${order.deliveryAddress?.city}, ${order.deliveryAddress?.state} ${order.deliveryAddress?.zipCode}
+Phone: ${order.deliveryAddress?.phone}
+Email: ${order.customerEmail}
 
-${order.shippingAddress.deliveryNotes ? `Delivery Notes: ${order.shippingAddress.deliveryNotes}` : ""}
+${order.deliveryAddress?.notes ? `Delivery Notes: ${order.deliveryAddress.notes}` : ""}
 
 ITEMS ORDERED
 -------------
 ${order.items
-  .map(
-    (item: any) =>
-      `${item.productName}
+        .map(
+          (item: any) =>
+            `${item.productName}
   Store: ${item.storeName}
   Quantity: ${item.quantity}
   Price: $${item.price.toFixed(2)} each
   Total: $${(item.price * item.quantity).toFixed(2)}`,
-  )
-  .join("\n\n")}
+        )
+        .join("\n\n")}
 
 ORDER SUMMARY
 -------------
 Subtotal: $${order.subtotal.toFixed(2)}
-Taxes: $${order.taxes.toFixed(2)}
-Delivery: $${order.shipping.toFixed(2)}
+Taxes: $${order.taxAmount.toFixed(2)}
+Delivery: $${order.deliveryFee.toFixed(2)}
 TOTAL: $${order.total.toFixed(2)}
 
 PAYMENT METHOD
 --------------
-${order.paymentMethod.type}${order.paymentMethod.last4 ? ` ending in ${order.paymentMethod.last4}` : ""}
+${order.paymentMethod}
 
 DELIVERY INFORMATION
 -------------------
-Estimated Delivery: ${order.estimatedDelivery.toLocaleString()}
-${order.deliveryPerson ? `Delivery Person: ${order.deliveryPerson.name} (${order.deliveryPerson.phone})` : ""}
+${order.delivery ? `Delivery Status: ${order.delivery.status}` : ""}
+${order.delivery?.driver ? `Driver: ${order.delivery.driver.name} (${order.delivery.driver.phone})` : ""}
 
 Thank you for your order!
-Visit us again at LiquorHub
+Visit us again at Vassoo
     `
   }
 
@@ -200,7 +228,9 @@ Visit us again at LiquorHub
     )
   }
 
-  const deliveryTime = Math.ceil((new Date(order.estimatedDelivery).getTime() - new Date().getTime()) / (1000 * 60))
+  const deliveryTime = order.estimatedDelivery
+    ? Math.ceil((new Date(order.estimatedDelivery).getTime() - new Date().getTime()) / (1000 * 60))
+    : 30
 
   return (
     <div className="min-h-screen bg-background">
@@ -218,7 +248,10 @@ Visit us again at LiquorHub
           <div className="flex items-center justify-center gap-2 text-lg">
             <Clock className="h-5 w-5 text-primary" />
             <span className="font-semibold text-primary">
-              Estimated delivery: {deliveryTime > 0 ? `${deliveryTime} minutes` : "Very soon!"}
+              {order.delivery?.status === 'in_transit' ? 'Driver is on their way!' :
+                order.delivery?.status === 'picked_up' ? 'Driver picked up your order' :
+                  order.delivery?.status === 'assigned' ? 'Driver assigned' :
+                    'Preparing your order'}
             </span>
           </div>
         </div>
@@ -248,39 +281,151 @@ Visit us again at LiquorHub
             </Link>
           </div>
 
+          {/* Tracking Section */}
+          <Card className="overflow-hidden border-orange-500/20 bg-gray-950/40">
+            <CardHeader className="border-b border-gray-800">
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Truck className="h-5 w-5 text-orange-500" />
+                  Delivery Tracking
+                </span>
+                {order.delivery && (
+                  <Badge variant="outline" className="text-orange-500 border-orange-500/30">
+                    {order.delivery.status.toUpperCase()}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="flex flex-col md:flex-row min-h-[400px]">
+                {/* Visual Map / Status */}
+                <div className="flex-1 bg-gray-900/50 p-6 flex flex-col items-center justify-center relative overflow-hidden">
+                  {/* Animated Pulse background */}
+                  <div className="absolute inset-0 z-0 flex items-center justify-center opacity-20">
+                    <div className="w-64 h-64 bg-orange-500/20 rounded-full animate-ping"></div>
+                  </div>
+
+                  <div className="z-10 text-center space-y-6 max-w-sm">
+                    <div className="relative inline-block">
+                      <div className="w-24 h-24 bg-orange-500/10 rounded-full flex items-center justify-center border-2 border-orange-500/30 shadow-[0_0_50px_rgba(249,115,22,0.15)]">
+                        {order.status === 'delivered' ? (
+                          <CheckCircle className="h-12 w-12 text-green-500" />
+                        ) : (
+                          <Truck className="h-12 w-12 text-orange-500 animate-bounce" />
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-bold text-white mb-2">
+                        {order.delivery?.status === 'in_transit' ? 'Order is in transit' :
+                          order.delivery?.status === 'picked_up' ? 'Order picked up' :
+                            order.delivery?.status === 'assigned' ? 'Driver assigned' :
+                              order.status === 'delivered' ? 'Order delivered!' :
+                                'Preparing your order'}
+                      </h3>
+                      <p className="text-gray-400 text-sm">
+                        {order.delivery?.status === 'in_transit' ? 'The driver is heading to your location.' :
+                          order.delivery?.status === 'picked_up' ? 'Your items have been picked up from the store.' :
+                            'Your order is being processed and will be assigned to a driver soon.'}
+                      </p>
+                    </div>
+
+                    <div className="w-full bg-gray-800 rounded-full h-2">
+                      <div
+                        className="bg-orange-500 h-2 rounded-full transition-all duration-1000"
+                        style={{
+                          width:
+                            order.status === 'delivered' ? '100%' :
+                              order.delivery?.status === 'in_transit' ? '75%' :
+                                order.delivery?.status === 'picked_up' ? '50%' :
+                                  order.delivery?.status === 'assigned' ? '25%' : '10%'
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timeline */}
+                <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-gray-800 p-6 space-y-8">
+                  <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Status History</h4>
+                  <div className="space-y-6 relative">
+                    {/* Vertical line connecting steps */}
+                    <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gray-800"></div>
+
+                    {[
+                      { id: 'delivered', label: 'Delivered', time: order.status === 'delivered' ? 'Now' : null },
+                      { id: 'in_transit', label: 'In Transit', time: order.delivery?.status === 'in_transit' ? 'Active' : null },
+                      { id: 'picked_up', label: 'Picked Up', time: (order.delivery?.status === 'picked_up' || order.delivery?.status === 'in_transit') ? 'Completed' : null },
+                      { id: 'assigned', label: 'Driver Assigned', time: order.delivery ? 'Done' : null },
+                      { id: 'confirmed', label: 'Order Confirmed', time: 'Completed', isFirst: true }
+                    ].map((step, idx) => {
+                      const isActive = order.delivery?.status === step.id || (step.id === 'delivered' && order.status === 'delivered')
+                      const isPast = (order.status === 'delivered') ||
+                        (step.id === 'in_transit' && order.delivery?.status === 'delivered') ||
+                        (step.id === 'picked_up' && ['in_transit', 'delivered'].includes(order.delivery?.status || '')) ||
+                        (step.id === 'assigned' && !!order.delivery) ||
+                        (step.id === 'confirmed')
+
+                      return (
+                        <div key={step.id} className="flex gap-4 relative z-10">
+                          <div className={`mt-1 h-6 w-6 rounded-full border-2 flex items-center justify-center ${isActive ? 'bg-orange-500 border-orange-500' :
+                            isPast ? 'bg-orange-500/20 border-orange-500 text-orange-500' :
+                              'bg-gray-900 border-gray-800 text-gray-600'
+                            }`}>
+                            {isPast ? <CheckCircle className="h-3 w-3" /> : <div className="h-1.5 w-1.5 rounded-full bg-current" />}
+                          </div>
+                          <div>
+                            <p className={`font-medium text-sm ${isActive ? 'text-white' : isPast ? 'text-gray-300' : 'text-gray-600'}`}>
+                              {step.label}
+                            </p>
+                            {step.time && <p className="text-xs text-gray-500 mt-0.5">{step.time}</p>}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Delivery Information */}
-          {order.deliveryPerson && (
-            <Card>
+          {order.delivery && order.delivery.driver && (
+            <Card className="border-blue-500/30 bg-blue-500/5">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-blue-400">
                   <Truck className="h-5 w-5" />
-                  Your Delivery Person
+                  Your Delivery Driver
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4">
-                  <Image
-                    src={order.deliveryPerson.photo || "/placeholder.svg"}
-                    alt={order.deliveryPerson.name}
-                    width={60}
-                    height={60}
-                    className="rounded-full object-cover"
-                  />
+                  <div className="relative">
+                    <Image
+                      src={order.delivery.driver.photo || "/placeholder.svg"}
+                      alt={order.delivery.driver.name}
+                      width={60}
+                      height={60}
+                      className="rounded-full object-cover border-2 border-blue-500/20"
+                    />
+                    <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
+                  </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{order.deliveryPerson.name}</h3>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <h3 className="font-semibold text-lg">{order.delivery.driver.name}</h3>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Phone className="h-4 w-4" />
-                        {order.deliveryPerson.phone}
+                        {order.delivery.driver.phone}
                       </span>
-                      <span>⭐ {order.deliveryPerson.rating}</span>
-                      <span>
-                        {order.deliveryPerson.vehicle} • {order.deliveryPerson.licensePlate}
+                      <span className="flex items-center gap-1">
+                        <Truck className="h-4 w-4" />
+                        {order.delivery.driver.vehicleType || 'Vehicle'} • {order.delivery.driver.vehiclePlate || 'N/A'}
                       </span>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    {order.status.replace("_", " ").toUpperCase()}
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
+                    {order.delivery.status.replace("_", " ").toUpperCase()}
                   </Badge>
                 </div>
               </CardContent>
@@ -288,35 +433,37 @@ Visit us again at LiquorHub
           )}
 
           {/* Delivery Address */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Delivery Address
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p className="font-semibold">{order.shippingAddress.name}</p>
-                <p>{order.shippingAddress.street}</p>
-                <p>
-                  {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}
-                </p>
-                <p className="text-muted-foreground">{order.shippingAddress.country}</p>
-                {order.shippingAddress.deliveryNotes && (
-                  <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
-                    <div className="flex items-start gap-2">
-                      <MessageSquare className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-blue-800">Delivery Instructions:</p>
-                        <p className="text-sm text-blue-700">{order.shippingAddress.deliveryNotes}</p>
+          {order.deliveryAddress && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Delivery Address
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="font-semibold">{order.deliveryAddress.name}</p>
+                  <p>{order.deliveryAddress.street}</p>
+                  <p>
+                    {order.deliveryAddress.city}, {order.deliveryAddress.state} {order.deliveryAddress.zipCode}
+                  </p>
+                  <p className="text-muted-foreground">{order.deliveryAddress.country}</p>
+                  {order.deliveryAddress.notes && (
+                    <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+                      <div className="flex items-start gap-2">
+                        <MessageSquare className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-800">Delivery Instructions:</p>
+                          <p className="text-sm text-blue-700">{order.deliveryAddress.notes}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Order Items */}
           <Card>
@@ -341,9 +488,9 @@ Visit us again at LiquorHub
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">
-                        ${((item.price + item.taxes + item.shippingCost) * item.quantity).toFixed(2)}
+                        ${(item.total).toFixed(2)}
                       </p>
-                      <p className="text-sm text-muted-foreground">${item.price.toFixed(2)} each</p>
+                      <p className="text-sm text-muted-foreground">${item.unitPrice.toFixed(2)} each</p>
                     </div>
                   </div>
                 ))}
@@ -364,11 +511,11 @@ Visit us again at LiquorHub
                 </div>
                 <div className="flex justify-between">
                   <span>Taxes:</span>
-                  <span>${order.taxes.toFixed(2)}</span>
+                  <span>${order.taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery:</span>
-                  <span>${order.shipping.toFixed(2)}</span>
+                  <span>${order.deliveryFee.toFixed(2)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
@@ -386,10 +533,7 @@ Visit us again at LiquorHub
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <span className="capitalize">{order.paymentMethod.type}</span>
-                {order.paymentMethod.last4 && (
-                  <span className="text-muted-foreground">ending in {order.paymentMethod.last4}</span>
-                )}
+                <span className="capitalize">{order.paymentMethod}</span>
               </div>
             </CardContent>
           </Card>
