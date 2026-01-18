@@ -1,408 +1,294 @@
 "use client"
 
-import { useState } from "react"
-import { Gift, Percent, Tag, Calendar, Users, Trophy, Star, Clock, Cake, PartyPopper } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { Gift, Percent, Truck, ArrowLeft, Copy, Check } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useLanguage } from "@/components/language-provider"
+import Navbar from "@/components/navbar"
+import Footer from "@/components/footer"
+import Link from "next/link"
 
-const activePromotions = [
-  {
-    id: 1,
-    title: "Welcome Bonus",
-    description: "Get 20% off your first order",
-    code: "WELCOME20",
-    discount: 20,
-    type: "percentage",
-    minOrder: 50,
-    validUntil: "2024-12-31",
-    category: "new-customer",
-    icon: Gift,
-    color: "bg-green-100 text-green-700",
-  },
-  {
-    id: 2,
-    title: "Free Shipping Weekend",
-    description: "Free delivery on orders over $75",
-    code: "FREESHIP",
-    discount: 0,
-    type: "shipping",
-    minOrder: 75,
-    validUntil: "2024-02-15",
-    category: "shipping",
-    icon: Calendar,
-    color: "bg-blue-100 text-blue-700",
-  },
-  {
-    id: 3,
-    title: "Bulk Buy Discount",
-    description: "Buy 3 bottles, get 15% off",
-    code: "BULK15",
-    discount: 15,
-    type: "quantity",
-    minOrder: 0,
-    validUntil: "2024-03-01",
-    category: "bulk",
-    icon: Trophy,
-    color: "bg-purple-100 text-purple-700",
-  },
-]
+interface ActivePromotion {
+  id: string
+  code: string
+  title: string
+  description: string
+  type: 'percentage' | 'fixed' | 'free_shipping'
+  value: number
+  minOrder: number | null
+  storeId: string | null
+  storeName: string | null
+  endDate: string | null
+  isGlobal: boolean
+}
 
-const seasonalPromotions = [
-  {
-    id: 4,
-    title: "Valentine's Special",
-    description: "25% off wine and champagne",
-    code: "LOVE25",
-    discount: 25,
-    type: "category",
-    minOrder: 100,
-    validUntil: "2024-02-14",
-    category: "seasonal",
-    icon: Star,
-    color: "bg-red-100 text-red-700",
-  },
-  {
-    id: 5,
-    title: "Spring Collection",
-    description: "30% off selected spirits",
-    code: "SPRING30",
-    discount: 30,
-    type: "category",
-    minOrder: 80,
-    validUntil: "2024-03-31",
-    category: "seasonal",
-    icon: Gift,
-    color: "bg-yellow-100 text-yellow-700",
-  },
-]
-
-const loyaltyPromotions = [
-  {
-    id: 6,
-    title: "VIP Member Exclusive",
-    description: "Extra 10% off for premium members",
-    code: "VIP10",
-    discount: 10,
-    type: "membership",
-    minOrder: 0,
-    validUntil: "2024-12-31",
-    category: "loyalty",
-    icon: Users,
-    color: "bg-indigo-100 text-indigo-700",
-  },
-]
-
-const birthdayOffers = [
-  {
-    id: "birthday-month",
-    title: "Birthday Month Special",
-    description: "Celebrate your special month with 25% off your entire order",
-    code: "BIRTHDAY25",
-    discount: 25,
-    validDays: 30,
-    icon: Cake,
-    color: "bg-pink-100 text-pink-700",
-    features: ["Valid for entire birthday month", "No minimum order", "Stackable with other offers"],
-  },
-  {
-    id: "birthday-surprise",
-    title: "Birthday Surprise Box",
-    description: "Get a curated selection of premium bottles delivered",
-    code: "SURPRISE",
-    discount: 0,
-    validDays: 7,
-    icon: PartyPopper,
-    color: "bg-orange-100 text-orange-700",
-    features: ["3 premium bottles", "Personalized selection", "Free gift wrapping"],
-  },
-  {
-    id: "birthday-party",
-    title: "Party Package Deal",
-    description: "Buy 6 bottles, get 2 free mixers and party accessories",
-    code: "PARTY6",
-    discount: 0,
-    validDays: 14,
-    icon: PartyPopper,
-    color: "bg-purple-100 text-purple-700",
-    features: ["Free mixers included", "Party decorations", "Recipe cards"],
-  },
-]
-
-const rewardProgram = {
-  currentPoints: 1250,
-  nextReward: 2000,
-  rewards: [
-    { points: 500, reward: "$5 off your order" },
-    { points: 1000, reward: "$12 off your order" },
-    { points: 2000, reward: "$25 off your order" },
-    { points: 5000, reward: "Free premium bottle" },
-  ],
+interface PromotionsData {
+  promotions: ActivePromotion[]
+  hasMore: boolean
+  count: number
 }
 
 export default function PromotionsPage() {
+  const { t } = useLanguage()
+  const [data, setData] = useState<PromotionsData | null>(null)
+  const [loading, setLoading] = useState(true)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
-  const copyCode = (code: string) => {
+  // Fetch promotions data
+  useEffect(() => {
+    async function fetchPromotions() {
+      try {
+        const response = await fetch('/api/homepage/promotions?limit=50')
+        const result = await response.json()
+        setData(result)
+      } catch (error) {
+        console.error('Error fetching promotions:', error)
+        setData({ promotions: [], hasMore: false, count: 0 })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPromotions()
+  }, [])
+
+  const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code)
     setCopiedCode(code)
     setTimeout(() => setCopiedCode(null), 2000)
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })
+  const getPromoIcon = (type: string) => {
+    switch (type) {
+      case 'free_shipping':
+        return Truck
+      case 'percentage':
+      case 'fixed':
+      default:
+        return Percent
+    }
   }
 
-  const PromotionCard = ({ promotion }: { promotion: any }) => {
-    const IconComponent = promotion.icon
+  const getPromoColor = (type: string, isGlobal: boolean) => {
+    if (isGlobal) {
+      return {
+        bg: "bg-gradient-to-br from-orange-500 to-amber-600",
+        text: "text-orange-600",
+        border: "border-orange-200 dark:border-orange-800"
+      }
+    }
+    switch (type) {
+      case 'free_shipping':
+        return {
+          bg: "bg-gradient-to-br from-blue-500 to-indigo-600",
+          text: "text-blue-600",
+          border: "border-blue-200 dark:border-blue-800"
+        }
+      case 'percentage':
+        return {
+          bg: "bg-gradient-to-br from-purple-500 to-pink-600",
+          text: "text-purple-600",
+          border: "border-purple-200 dark:border-purple-800"
+        }
+      case 'fixed':
+      default:
+        return {
+          bg: "bg-gradient-to-br from-amber-500 to-orange-600",
+          text: "text-amber-600",
+          border: "border-amber-200 dark:border-amber-800"
+        }
+    }
+  }
+
+  // Loading skeleton
+  if (loading) {
     return (
-      <Card className="group hover:shadow-lg transition-all duration-300">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className={`p-3 rounded-lg ${promotion.color}`}>
-              <IconComponent className="h-6 w-6" />
-            </div>
-            <Badge variant="outline" className="text-xs">
-              <Clock className="h-3 w-3 mr-1" />
-              Until {formatDate(promotion.validUntil)}
-            </Badge>
-          </div>
-
-          <h3 className="text-xl font-semibold mb-2">{promotion.title}</h3>
-          <p className="text-muted-foreground mb-4">{promotion.description}</p>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <code className="font-mono font-bold text-primary">{promotion.code}</code>
-              <Button size="sm" variant="outline" onClick={() => copyCode(promotion.code)} className="text-xs">
-                {copiedCode === promotion.code ? "Copied!" : "Copy"}
-              </Button>
-            </div>
-
-            <div className="text-sm text-muted-foreground space-y-1">
-              {promotion.minOrder > 0 && <div>• Minimum order: ${promotion.minOrder}</div>}
-              {promotion.type === "percentage" && <div>• {promotion.discount}% discount</div>}
-              {promotion.type === "shipping" && <div>• Free shipping included</div>}
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <main className="flex-1">
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+            <div className="container mx-auto px-4 py-12">
+              <Skeleton className="h-10 w-64 bg-white/20 mb-4" />
+              <Skeleton className="h-6 w-96 bg-white/20" />
             </div>
           </div>
-        </CardContent>
-      </Card>
+          <div className="container mx-auto px-4 py-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <Card key={i}>
+                  <CardContent className="p-0">
+                    <Skeleton className="h-20 w-full" />
+                    <div className="p-4">
+                      <Skeleton className="h-6 w-24 mb-2" />
+                      <Skeleton className="h-4 w-full mb-3" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
     )
   }
 
-  const BirthdayCard = ({ offer }: { offer: any }) => {
-    const IconComponent = offer.icon
+  // No promotions available
+  if (!data || data.promotions.length === 0) {
     return (
-      <Card className="group hover:shadow-lg transition-all duration-300">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className={`p-3 rounded-lg ${offer.color}`}>
-              <IconComponent className="h-6 w-6" />
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <main className="flex-1">
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+            <div className="container mx-auto px-4 py-12">
+              <div className="flex items-center space-x-3 mb-4">
+                <Gift className="h-8 w-8" />
+                <h1 className="text-3xl font-bold">{t("promotions.title")}</h1>
+              </div>
+              <p className="text-orange-100 text-lg">{t("promotions.subtitle")}</p>
             </div>
-            <Badge variant="outline" className="text-xs">
-              Valid {offer.validDays} days
-            </Badge>
           </div>
-
-          <h3 className="text-xl font-semibold mb-2">{offer.title}</h3>
-          <p className="text-muted-foreground mb-4">{offer.description}</p>
-
-          {offer.code && (
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg mb-4">
-              <code className="font-mono font-bold text-primary">{offer.code}</code>
-              <Button size="sm" variant="outline" onClick={() => copyCode(offer.code)} className="text-xs">
-                {copiedCode === offer.code ? "Copied!" : "Copy"}
+          <div className="container mx-auto px-4 py-16 text-center">
+            <Gift className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-semibold mb-2">No Promotions Available</h2>
+            <p className="text-muted-foreground mb-6">
+              Check back soon for exciting promotions and coupon codes!
+            </p>
+            <Link href="/">
+              <Button variant="outline">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
               </Button>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Includes:</h4>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              {offer.features.map((feature: string, index: number) => (
-                <li key={index}>• {feature}</li>
-              ))}
-            </ul>
+            </Link>
           </div>
-        </CardContent>
-      </Card>
+        </main>
+        <Footer />
+      </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
-        <div className="container mx-auto px-4 py-12">
-          <div className="flex items-center space-x-3 mb-4">
-            <Gift className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">Promotions & Rewards</h1>
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navbar />
+      <main className="flex-1">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+          <div className="container mx-auto px-4 py-12">
+            <div className="flex items-center space-x-3 mb-4">
+              <Gift className="h-8 w-8" />
+              <h1 className="text-3xl font-bold">{t("promotions.title")}</h1>
+            </div>
+            <p className="text-orange-100 text-lg">{t("promotions.subtitle")}</p>
           </div>
-          <p className="text-green-100 text-lg">Save more with our exclusive deals and loyalty program</p>
         </div>
-      </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Rewards Program */}
-        <Card className="mb-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Trophy className="h-6 w-6" />
-              <span>Your Rewards Status</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <div className="text-3xl font-bold mb-2">{rewardProgram.currentPoints} Points</div>
-                <div className="text-purple-100 mb-4">
-                  {rewardProgram.nextReward - rewardProgram.currentPoints} points to next reward
-                </div>
-                <div className="w-full bg-purple-400 rounded-full h-2">
-                  <div
-                    className="bg-white h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(rewardProgram.currentPoints / rewardProgram.nextReward) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="font-semibold mb-3">Available Rewards:</h4>
-                {rewardProgram.rewards.map((reward, index) => (
-                  <div key={index} className="flex justify-between items-center text-sm">
-                    <span>{reward.points} pts</span>
-                    <span className="text-purple-100">{reward.reward}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Active Deals Section */}
-        <section className="mb-12">
-          <div className="flex items-center space-x-2 mb-6">
-            <Percent className="h-6 w-6 text-primary" />
-            <h2 className="text-2xl font-bold">Active Deals</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activePromotions.map((promotion) => (
-              <PromotionCard key={promotion.id} promotion={promotion} />
-            ))}
-          </div>
-        </section>
-
-        {/* Seasonal Promotions Section */}
-        <section className="mb-12">
-          <div className="flex items-center space-x-2 mb-6">
-            <Calendar className="h-6 w-6 text-primary" />
-            <h2 className="text-2xl font-bold">Seasonal Offers</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {seasonalPromotions.map((promotion) => (
-              <PromotionCard key={promotion.id} promotion={promotion} />
-            ))}
-          </div>
-        </section>
-
-        {/* Loyalty Program Section */}
-        <section className="mb-12">
-          <div className="flex items-center space-x-2 mb-6">
-            <Users className="h-6 w-6 text-primary" />
-            <h2 className="text-2xl font-bold">Loyalty Benefits</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {loyaltyPromotions.map((promotion) => (
-              <PromotionCard key={promotion.id} promotion={promotion} />
-            ))}
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>How to Earn Points</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4">
-                  <div className="text-2xl font-bold text-primary mb-2">1 Point</div>
-                  <div className="text-sm text-muted-foreground">per $1 spent</div>
-                </div>
-                <div className="text-center p-4">
-                  <div className="text-2xl font-bold text-primary mb-2">50 Points</div>
-                  <div className="text-sm text-muted-foreground">for product reviews</div>
-                </div>
-                <div className="text-center p-4">
-                  <div className="text-2xl font-bold text-primary mb-2">100 Points</div>
-                  <div className="text-sm text-muted-foreground">for referrals</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Happy Birthday Celebrations Section */}
-        <section className="mb-12">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center space-x-3 mb-4">
-              <Cake className="h-8 w-8 text-pink-600" />
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                Happy Birthday Celebrations
-              </h2>
-              <PartyPopper className="h-8 w-8 text-purple-600" />
-            </div>
-            <p className="text-muted-foreground text-lg">
-              Make your special day even more memorable with our exclusive birthday offers
+        {/* Promotions Grid */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-muted-foreground">
+              {data.count} {data.count === 1 ? 'promotion' : 'promotions'} available
             </p>
+            <Link href="/">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {birthdayOffers.map((offer) => (
-              <BirthdayCard key={offer.id} offer={offer} />
-            ))}
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {data.promotions.map((promo) => {
+              const IconComponent = getPromoIcon(promo.type)
+              const colors = getPromoColor(promo.type, promo.isGlobal)
 
-          {/* Birthday Registration CTA */}
-          <Card className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-            <CardContent className="p-8 text-center">
-              <Cake className="h-12 w-12 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold mb-2">Register Your Birthday</h3>
-              <p className="text-pink-100 mb-6">
-                Don't miss out on exclusive birthday treats! Add your birthday to your profile and we'll make sure to
-                celebrate with you.
-              </p>
-              <div className="flex justify-center space-x-4">
-                <Button variant="secondary" size="lg">
-                  Add Birthday to Profile
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="text-white border-white hover:bg-white hover:text-purple-600 bg-transparent"
+              return (
+                <Card
+                  key={promo.id}
+                  className={`group transition-all duration-300 hover:shadow-xl ${colors.border} overflow-hidden`}
                 >
-                  Learn More
-                </Button>
+                  <CardContent className="p-0">
+                    {/* Icon Header */}
+                    <div className={`${colors.bg} p-4 flex items-center justify-between`}>
+                      <IconComponent className="h-10 w-10 text-white" />
+                      {promo.isGlobal && (
+                        <Badge className="bg-white/20 text-white hover:bg-white/30">
+                          Platform-wide
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <h3 className={`font-bold text-lg ${colors.text}`}>{promo.title}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{promo.description}</p>
+                      </div>
+
+                      {promo.storeName && (
+                        <p className="text-xs text-muted-foreground">
+                          At: {promo.storeName}
+                        </p>
+                      )}
+
+                      {promo.endDate && (
+                        <p className="text-xs text-muted-foreground">
+                          Expires: {new Date(promo.endDate).toLocaleDateString()}
+                        </p>
+                      )}
+
+                      {/* Coupon Code */}
+                      <div className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
+                        <code className="font-mono font-bold text-sm">{promo.code}</code>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleCopyCode(promo.code)}
+                        >
+                          {copiedCode === promo.code ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+
+          {/* How to use section */}
+          <Card className="mt-12 bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+            <CardContent className="p-8 text-center">
+              <Gift className="h-12 w-12 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-2">How to Use Promo Codes</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <div className="text-center">
+                  <div className="text-3xl mb-2">1</div>
+                  <h3 className="font-semibold mb-2">Copy the Code</h3>
+                  <p className="text-orange-100 text-sm">Click the copy button next to your desired promotion</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl mb-2">2</div>
+                  <h3 className="font-semibold mb-2">Shop & Add to Cart</h3>
+                  <p className="text-orange-100 text-sm">Browse products and add your favorites to the cart</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl mb-2">3</div>
+                  <h3 className="font-semibold mb-2">Apply at Checkout</h3>
+                  <p className="text-orange-100 text-sm">Paste the code in the promo field to get your discount</p>
+                </div>
               </div>
             </CardContent>
           </Card>
-        </section>
-
-        {/* Newsletter */}
-        <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-          <CardContent className="p-8 text-center">
-            <Tag className="h-12 w-12 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Stay Updated on Deals</h2>
-            <p className="text-blue-100 mb-6">Be the first to know about new promotions and exclusive offers</p>
-            <div className="flex max-w-md mx-auto space-x-2">
-              <input type="email" placeholder="Enter your email" className="flex-1 px-4 py-2 rounded-lg text-black" />
-              <Button variant="secondary">Subscribe</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        </div>
+      </main>
+      <Footer />
     </div>
   )
 }
