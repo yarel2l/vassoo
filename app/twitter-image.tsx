@@ -21,11 +21,9 @@ export default async function Image() {
           height: '100%',
           width: '100%',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: '#111827',
-          backgroundImage: 'linear-gradient(135deg, #111827 0%, #1f2937 100%)',
         }}
       >
         {/* Logo container */}
@@ -34,17 +32,16 @@ export default async function Image() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 200,
-            height: 200,
-            borderRadius: 30,
+            width: 400,
+            height: 400,
+            borderRadius: 60,
             background: 'linear-gradient(135deg, #f97316 0%, #f59e0b 100%)',
-            marginBottom: 40,
           }}
         >
           {/* Whisky glass icon */}
           <svg
-            width="100"
-            height="150"
+            width="200"
+            height="300"
             viewBox="0 0 100 150"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -59,39 +56,6 @@ export default async function Image() {
             <line x1="22" y1="137.5" x2="78" y2="137.5" stroke="white" strokeWidth="10" />
           </svg>
         </div>
-
-        {/* Brand name */}
-        <div
-          style={{
-            fontSize: 72,
-            fontWeight: 'bold',
-            color: 'white',
-            marginBottom: 20,
-          }}
-        >
-          Vassoo
-        </div>
-
-        {/* Tagline */}
-        <div
-          style={{
-            fontSize: 28,
-            color: '#9ca3af',
-          }}
-        >
-          Premium Spirits & Wine Marketplace
-        </div>
-
-        {/* Bottom accent line */}
-        <div
-          style={{
-            width: 400,
-            height: 4,
-            borderRadius: 2,
-            background: 'linear-gradient(135deg, #f97316 0%, #f59e0b 100%)',
-            marginTop: 40,
-          }}
-        />
       </div>
     ),
     {
