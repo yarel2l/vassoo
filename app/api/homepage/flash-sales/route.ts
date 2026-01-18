@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Check for required environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+const supabase = supabaseUrl && supabaseServiceKey 
+    ? createClient(supabaseUrl, supabaseServiceKey)
+    : null
 
 export interface FlashSaleProduct {
     id: string
@@ -26,6 +29,18 @@ export interface FlashSaleProduct {
 
 export async function GET() {
     try {
+        // Check if Supabase is configured
+        if (!supabase) {
+            console.error('Flash sales API: Supabase not configured - missing environment variables')
+            return NextResponse.json({
+                products: [],
+                hasMore: false,
+                timeRemaining: 0,
+                count: 0,
+                error: 'Database not configured'
+            })
+        }
+
         const now = new Date().toISOString()
 
         // Get active flash sales from promotions table

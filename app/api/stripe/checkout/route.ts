@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import {
     getStripeInstance,
     isStripeConfigured
@@ -8,10 +8,13 @@ import {
 import { taxCalculationService } from '@/lib/services/tax-calculation-service'
 import { feeCalculationService } from '@/lib/services/fee-calculation-service'
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Check for required environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+const supabase: SupabaseClient | null = supabaseUrl && supabaseServiceKey 
+    ? createClient(supabaseUrl, supabaseServiceKey)
+    : null
 
 interface CartItem {
     id: string

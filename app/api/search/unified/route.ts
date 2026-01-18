@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Check for required environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+const supabase = supabaseUrl && supabaseServiceKey 
+    ? createClient(supabaseUrl, supabaseServiceKey)
+    : null
 
 export interface UnifiedSearchResult {
     categories: Array<{
@@ -38,8 +41,21 @@ export interface UnifiedSearchResult {
     totalResults: number
 }
 
+const emptyResult: UnifiedSearchResult = {
+    categories: [],
+    products: [],
+    stores: [],
+    totalResults: 0
+}
+
 export async function GET(request: Request) {
     try {
+        // Check if Supabase is configured
+        if (!supabase) {
+            console.error('Search API: Supabase not configured - missing environment variables')
+            return NextResponse.json({ ...emptyResult, error: 'Database not configured' })
+        }
+
         const { searchParams } = new URL(request.url)
         const query = searchParams.get('q')?.trim() || ''
         const limit = Math.min(parseInt(searchParams.get('limit') || '5'), 10)

@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Check for required environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+const supabase: SupabaseClient | null = supabaseUrl && supabaseServiceKey 
+    ? createClient(supabaseUrl, supabaseServiceKey)
+    : null
 
 /**
  * Link guest orders to a newly registered user
@@ -12,6 +15,13 @@ const supabase = createClient(
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Server not configured' },
+        { status: 500 }
+      )
+    }
+
     const { email, orderId } = await request.json()
 
     if (!email) {

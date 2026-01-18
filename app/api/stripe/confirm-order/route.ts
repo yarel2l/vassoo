@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { getStripeInstance } from '@/lib/stripe/stripe'
 import { feeCalculationService } from '@/lib/services/fee-calculation-service'
 
@@ -12,16 +12,24 @@ async function getStripe(): Promise<Stripe> {
             stripe = await getStripeInstance()
         } catch {
             // Fallback to env variable if settings not configured
-            stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+            if (process.env.STRIPE_SECRET_KEY) {
+                stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+            }
         }
+    }
+    if (!stripe) {
+        throw new Error('Stripe not configured')
     }
     return stripe
 }
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Check for required environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+const supabase: SupabaseClient | null = supabaseUrl && supabaseServiceKey 
+    ? createClient(supabaseUrl, supabaseServiceKey)
+    : null
 
 interface ConfirmOrderRequest {
     paymentIntentId: string
