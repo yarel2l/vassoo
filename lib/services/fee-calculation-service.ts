@@ -11,9 +11,10 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Initialize Supabase client for server-side use
+// Note: Using NEXT_PUBLIC_ prefix for Amplify SSR compatibility
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export interface PlatformFee {

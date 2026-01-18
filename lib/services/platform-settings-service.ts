@@ -119,7 +119,8 @@ export function invalidateCache(keyPattern?: string): void {
 
 function getAdminClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    // Note: Using NEXT_PUBLIC_ prefix for Amplify SSR compatibility
+    const serviceRoleKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !serviceRoleKey) {
         throw new Error('Missing Supabase configuration')

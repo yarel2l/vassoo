@@ -9,7 +9,7 @@ import { platformSettingsService } from '@/lib/services/platform-settings-servic
 export async function GET() {
     try {
         // Check if Supabase environment variables are configured
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY) {
             console.warn('[Google API Settings] Missing Supabase environment variables')
             return NextResponse.json({
                 enabled: false,

@@ -16,20 +16,21 @@ const KEY_LENGTH = 32 // 256 bits
 /**
  * Get the encryption key from environment variable
  * The key should be a 64-character hex string (32 bytes)
+ * Note: Using NEXT_PUBLIC_ prefix for Amplify SSR compatibility
  */
 function getEncryptionKey(): Buffer {
-    const keyHex = process.env.SETTINGS_ENCRYPTION_KEY
+    const keyHex = process.env.NEXT_PUBLIC_SETTINGS_ENCRYPTION_KEY
 
     if (!keyHex) {
         throw new Error(
-            'SETTINGS_ENCRYPTION_KEY environment variable is not set. ' +
+            'NEXT_PUBLIC_SETTINGS_ENCRYPTION_KEY environment variable is not set. ' +
             'Generate one with: openssl rand -hex 32'
         )
     }
 
     if (keyHex.length !== 64) {
         throw new Error(
-            'SETTINGS_ENCRYPTION_KEY must be a 64-character hex string (32 bytes). ' +
+            'NEXT_PUBLIC_SETTINGS_ENCRYPTION_KEY must be a 64-character hex string (32 bytes). ' +
             'Generate one with: openssl rand -hex 32'
         )
     }

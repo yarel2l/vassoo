@@ -88,7 +88,7 @@ export async function updateSession(request: NextRequest) {
         // This is safe because we are ONLY checking for the verified user.id we got from auth.getUser()
         const adminSupabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
             {
                 cookies: {
                     getAll() { return [] },
@@ -125,7 +125,7 @@ export async function updateSession(request: NextRequest) {
         // Check if platform admin first
         const adminSupabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
             {
                 cookies: {
                     getAll() { return [] },
@@ -176,7 +176,7 @@ export async function updateSession(request: NextRequest) {
         // Check if platform admin first
         const adminSupabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
             {
                 cookies: {
                     getAll() { return [] },

@@ -39,14 +39,14 @@ export async function GET() {
             masked: maskValue(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID),
         },
         
-        // Server-only variables (should be available at runtime)
-        SUPABASE_SERVICE_ROLE_KEY: {
-            exists: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-            masked: maskValue(process.env.SUPABASE_SERVICE_ROLE_KEY),
+        // Server variables (now with NEXT_PUBLIC_ prefix for Amplify SSR)
+        NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY: {
+            exists: !!process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY,
+            masked: maskValue(process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY),
         },
-        SETTINGS_ENCRYPTION_KEY: {
-            exists: !!process.env.SETTINGS_ENCRYPTION_KEY,
-            masked: maskValue(process.env.SETTINGS_ENCRYPTION_KEY),
+        NEXT_PUBLIC_SETTINGS_ENCRYPTION_KEY: {
+            exists: !!process.env.NEXT_PUBLIC_SETTINGS_ENCRYPTION_KEY,
+            masked: maskValue(process.env.NEXT_PUBLIC_SETTINGS_ENCRYPTION_KEY),
         },
 
         // AWS Amplify specific
