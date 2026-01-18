@@ -45,7 +45,7 @@ const translations = {
     "products.from": "from",
 
     // Footer
-    "footer.about": "About LiquorHub",
+    "footer.about": "About Vassoo",
     "footer.about.text": "Your premium destination for the finest beverages from multiple trusted stores.",
     "footer.links": "Quick Links",
     "footer.contact": "Contact Info",
@@ -71,6 +71,17 @@ const translations = {
     "flash.subtitle": "Limited time offers - grab them before they're gone!",
     "flash.left": "left",
     "flash.buyNow": "Buy Now",
+    "flash.viewAll": "View All Flash Sales",
+
+    // Promotions
+    "promotions.title": "Active Promotions",
+    "promotions.subtitle": "Use these codes at checkout to save on your order",
+    "promotions.viewAll": "View All Promotions",
+
+    // Mix & Match
+    "mixMatch.title": "Mix & Match Deals",
+    "mixMatch.subtitle": "Create your own bundle and save big",
+    "mixMatch.viewAll": "View All Deals",
 
     // Birthday Section
     "birthday.title": "Happy Birthday Celebrations",
@@ -146,7 +157,7 @@ const translations = {
     "products.from": "desde",
 
     // Footer
-    "footer.about": "Acerca de LiquorHub",
+    "footer.about": "Acerca de Vassoo",
     "footer.about.text": "Tu destino premium para las mejores bebidas de múltiples tiendas confiables.",
     "footer.links": "Enlaces Rápidos",
     "footer.contact": "Información de Contacto",
@@ -172,6 +183,17 @@ const translations = {
     "flash.subtitle": "¡Ofertas por tiempo limitado - consíguelas antes de que se agoten!",
     "flash.left": "quedan",
     "flash.buyNow": "Comprar Ahora",
+    "flash.viewAll": "Ver Todas las Ofertas Flash",
+
+    // Promotions
+    "promotions.title": "Promociones Activas",
+    "promotions.subtitle": "Usa estos códigos en el checkout para ahorrar en tu pedido",
+    "promotions.viewAll": "Ver Todas las Promociones",
+
+    // Mix & Match
+    "mixMatch.title": "Ofertas Mix & Match",
+    "mixMatch.subtitle": "Crea tu propio paquete y ahorra en grande",
+    "mixMatch.viewAll": "Ver Todas las Ofertas",
 
     // Birthday Section
     "birthday.title": "Celebraciones de Cumpleaños",
@@ -235,7 +257,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }
 
   const t = (key: string): string => {
-    return translations[language][key] || key
+    const langTranslations = translations[language] as Record<string, string>
+    return langTranslations[key] || key
   }
 
   return (

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 
 interface OnboardingData {
-  isOver18: boolean
+  isOfAge: boolean
   address?: string
 }
 
@@ -34,7 +34,7 @@ export function useOnboarding() {
   const completeOnboarding = (data: OnboardingData) => {
     try {
       localStorage.setItem("vassoo-onboarding-completed", "true")
-      localStorage.setItem("vassoo-age-verified", data.isOver18.toString())
+      localStorage.setItem("vassoo-age-verified", data.isOfAge.toString())
 
       if (data.address) {
         localStorage.setItem("vassoo-shipping-address", data.address)

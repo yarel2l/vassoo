@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -57,6 +57,10 @@ export default function NewsletterDialog({ isOpen, onClose }: NewsletterDialogPr
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-md">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Subscription Confirmed</DialogTitle>
+            <DialogDescription>You are now subscribed to our newsletter</DialogDescription>
+          </DialogHeader>
           <div className="text-center p-6">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Welcome to the Club!</h2>
@@ -78,6 +82,9 @@ export default function NewsletterDialog({ isOpen, onClose }: NewsletterDialogPr
             <Mail className="w-6 h-6 text-orange-600" />
             Join Our Premium Club
           </DialogTitle>
+          <DialogDescription>
+            Get exclusive access to rare spirits, special discounts, and promotions
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
