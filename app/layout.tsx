@@ -12,6 +12,7 @@ import { OrdersProvider } from "@/contexts/orders-context"
 import { Toaster } from "@/components/ui/toaster"
 import OnboardingWrapper from "@/components/onboarding-wrapper"
 import { GoogleAnalytics } from "@/components/google-analytics"
+import { getPlatformSEOSettings } from "@/lib/services/seo-settings"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,56 +21,61 @@ const inter = Inter({
   variable: "--font-inter",
 })
 
-export const metadata: Metadata = {
-  title: "Vassoo - Premium Spirits & Wine Marketplace",
-  description:
-    "Discover premium spirits, wines, and liquors from multiple stores with the best prices and deals. Compare offers, read reviews, and enjoy fast delivery.",
-  keywords: "liquor, spirits, wine, whiskey, vodka, rum, gin, tequila, cognac, premium alcohol, online liquor store",
-  authors: [{ name: "Vassoo" }],
-  creator: "Vassoo",
-  publisher: "Vassoo",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    title: "Vassoo - Premium Spirits & Wine Marketplace",
-    description: "Discover premium spirits, wines, and liquors from multiple stores with the best prices and deals.",
-    siteName: "Vassoo",
-    // Note: opengraph-image.tsx automatically generates the OG image
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Vassoo - Premium Spirits & Wine Marketplace",
-    description: "Discover premium spirits, wines, and liquors from multiple stores with the best prices and deals.",
-    creator: "@vassoo",
-    // Note: twitter-image.tsx automatically generates the Twitter image
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPlatformSEOSettings()
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  const fullTitle = `${seo.platformName} - ${seo.platformTagline}`
+
+  return {
+    title: fullTitle,
+    description: seo.platformDescription,
+    keywords: "liquor, spirits, wine, whiskey, vodka, rum, gin, tequila, cognac, premium alcohol, online liquor store",
+    authors: [{ name: seo.platformName }],
+    creator: seo.platformName,
+    publisher: seo.platformName,
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    metadataBase: new URL(baseUrl),
+    alternates: {
+      canonical: "/",
+    },
+    openGraph: {
+      type: "website",
+      locale: "en_US",
+      url: baseUrl,
+      title: fullTitle,
+      description: seo.platformDescription,
+      siteName: seo.platformName,
+      // Note: opengraph-image.tsx automatically generates the OG image
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: fullTitle,
+      description: seo.platformDescription,
+      creator: `@${seo.platformName.toLowerCase()}`,
+      // Note: twitter-image.tsx automatically generates the Twitter image
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  icons: {
-    icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-    ],
-    apple: '/apple-icon.png',
-  },
+    icons: {
+      icon: [
+        { url: '/favicon.svg', type: 'image/svg+xml' },
+      ],
+      apple: '/apple-icon.png',
+    },
+  }
 }
 
 export default function RootLayout({
